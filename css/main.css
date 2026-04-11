@@ -1,0 +1,328 @@
+/* === Normie Mirror — Global Styles === */
+
+:root {
+  --color-dark: #48494b;
+  --color-light: #e3e5e4;
+  --color-accent: #ff6b35;
+  --color-record: #00cc88;
+  --color-bg: #1a1a1d;
+  --color-surface: #2a2a2e;
+  --color-text: #e3e5e4;
+  --color-text-muted: #8a8a8e;
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-body: 'Courier New', monospace;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* === Typography === */
+
+h1, h2, h3 {
+  font-family: var(--font-pixel);
+  letter-spacing: 1px;
+}
+
+h1 { font-size: 16px; }
+h2 { font-size: 12px; }
+h3 { font-size: 10px; }
+
+/* === Buttons === */
+
+.btn {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 12px 20px;
+  border: 3px solid var(--color-dark);
+  background: var(--color-light);
+  color: var(--color-dark);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.1s, transform 0.1s;
+  image-rendering: pixelated;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn--primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.btn--record {
+  background: var(--color-record);
+  color: #fff;
+  border-color: var(--color-record);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+.btn--icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 2px;
+}
+
+/* === Input === */
+
+.input {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 12px 16px;
+  border: 3px solid var(--color-dark);
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  width: 100%;
+  text-align: center;
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+/* === Screens === */
+
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen--center {
+  align-items: center;
+  justify-content: center;
+}
+
+/* === Camera views === */
+
+.camera-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* === Toolbar === */
+
+.toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.6));
+  z-index: 10;
+}
+
+.toolbar--top {
+  top: 0;
+  bottom: auto;
+  padding-top: max(16px, env(safe-area-inset-top));
+  background: linear-gradient(rgba(0,0,0,0.6), transparent);
+  justify-content: space-between;
+}
+
+/* === Shutter button === */
+
+.shutter-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 0;
+  border: 4px solid #fff;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shutter-btn::after {
+  content: '';
+  width: 48px;
+  height: 48px;
+  background: #fff;
+}
+
+.shutter-btn:active::after {
+  background: var(--color-accent);
+}
+
+.shutter-btn--recording {
+  border-color: var(--color-record);
+}
+
+.shutter-btn--recording::after {
+  width: 24px;
+  height: 24px;
+  background: var(--color-record);
+}
+
+/* === Filter bar === */
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-chip {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  padding: 6px 12px;
+  border: 2px solid var(--color-text-muted);
+  background: transparent;
+  color: var(--color-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.filter-chip--active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* === Normie preview === */
+
+.normie-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* === Loading === */
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-text {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+/* === Toast === */
+
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  padding: 10px 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-dark);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.toast--visible {
+  opacity: 1;
+}
+
+/* === Scrollbar (for lists) === */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-dark);
+}
+
+/* === Pixel-art image rendering === */
+
+img, canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* === Safe area padding for notch devices === */
+
+.safe-top {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
+.safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}

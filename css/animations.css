@@ -1,0 +1,117 @@
+/* === Normie Mirror — Animations === */
+
+/* Hologram flicker */
+@keyframes hologram-flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.8; }
+  94% { opacity: 1; }
+  96% { opacity: 0.85; }
+  97% { opacity: 1; }
+}
+
+/* Breathe — gentle float */
+@keyframes breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Bounce — energetic */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  30% { transform: translateY(-8px) scaleY(1.03); }
+  60% { transform: translateY(0) scaleY(0.97); }
+}
+
+/* Shake — angry/energetic */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* Scanline overlay */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* Glow pulse */
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px var(--glow-color)); }
+  50% { filter: drop-shadow(0 0 14px var(--glow-color)); }
+}
+
+/* Fade in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Slide up */
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* === Animation classes === */
+
+.anim-hologram {
+  animation: hologram-flicker 3s infinite;
+}
+
+.anim-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+.anim-bounce {
+  animation: bounce 0.8s ease-in-out infinite;
+}
+
+.anim-shake {
+  animation: shake 0.3s ease-in-out infinite;
+}
+
+.anim-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.anim-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.anim-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+/* Scanline effect overlay */
+.scanline-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  z-index: 5;
+}
+
+.scanline-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 30%;
+  background: linear-gradient(
+    transparent,
+    rgba(72, 73, 75, 0.05),
+    transparent
+  );
+  animation: scanline 4s linear infinite;
+  pointer-events: none;
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#48494b"/>
+  <rect x="16" y="16" width="480" height="480" fill="none" stroke="#ff6b35" stroke-width="16"/>
+  <!-- N letter pixel art -->
+  <g fill="#e3e5e4">
+    <!-- Left bar -->
+    <rect x="144" y="128" width="32" height="256"/>
+    <!-- Right bar -->
+    <rect x="336" y="128" width="32" height="256"/>
+    <!-- Diagonal -->
+    <rect x="176" y="144" width="32" height="48"/>
+    <rect x="208" y="192" width="32" height="48"/>
+    <rect x="240" y="240" width="32" height="48"/>
+    <rect x="272" y="288" width="32" height="48"/>
+    <rect x="304" y="336" width="32" height="48"/>
+  </g>
+</svg>
