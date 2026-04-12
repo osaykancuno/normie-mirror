@@ -12,6 +12,7 @@ const state = {
   capturedType: null, // 'photo' | 'video'
   isRecording: false,
   activeFilter: 'none',
+  displayMode: 'ar', // 'ar' (transparent hologram) | 'solid' (with background, mural/sticker)
   cameraFacing: 'environment',
   recentNormies: [],
 };

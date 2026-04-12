@@ -1,4 +1,4 @@
-// Normie Mirror — AR overlay compositor (enhanced visibility)
+// Normie Mirror — AR overlay compositor
 
 import { createNormieSprite } from '../render/pixel-renderer.js';
 import { getState } from '../state.js';
@@ -7,14 +7,16 @@ export class AROverlay {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.sprite = null;
+    this.spriteTransparent = null; // No background (AR hologram)
+    this.spriteSolid = null;       // With background (sticker/mural)
     this.animFrame = null;
     this.animationFn = null;
     this.startTime = 0;
   }
 
   loadSprite(pixelData) {
-    this.sprite = createNormieSprite(pixelData, { transparent: true });
+    this.spriteTransparent = createNormieSprite(pixelData, { transparent: true });
+    this.spriteSolid = createNormieSprite(pixelData, { transparent: false });
   }
 
   setAnimationFn(fn) {
@@ -44,10 +46,12 @@ export class AROverlay {
   }
 
   _draw() {
-    const { ctx, canvas, sprite } = this;
+    const { ctx, canvas } = this;
+    const state = getState();
+    const isSolid = state.displayMode === 'solid';
+    const sprite = isSolid ? this.spriteSolid : this.spriteTransparent;
     if (!sprite) return;
 
-    const state = getState();
     const { overlayPosition, overlayScale, overlayRotation } = state;
     const elapsed = (performance.now() - this.startTime) / 1000;
 
@@ -65,96 +69,66 @@ export class AROverlay {
       mods = this.animationFn(elapsed, mods);
     }
 
-    // Draw glow behind sprite
-    if (mods.glowColor) {
-      this._drawGlow(x + mods.x, y + mods.y, size, mods.glowColor, elapsed);
+    const drawX = x + mods.x;
+    const drawY = y + mods.y;
+
+    if (isSolid) {
+      // SOLID MODE: clean pixel art, subtle shadow for depth
+      this._drawSolid(sprite, drawX, drawY, size, overlayRotation + (mods.rotation || 0), mods);
+    } else {
+      // AR MODE: hologram look with pixel glow
+      this._drawHologram(sprite, drawX, drawY, size, overlayRotation + (mods.rotation || 0), mods, elapsed);
     }
+  }
 
-    // Draw hologram glow (always — white/cyan tint)
-    this._drawHologramGlow(x + mods.x, y + mods.y, size, elapsed);
+  _drawSolid(sprite, x, y, size, rotation, mods) {
+    const { ctx } = this;
 
-    // Draw the sprite
+    // Drop shadow for "sticker on wall" feel
     ctx.save();
     ctx.imageSmoothingEnabled = false;
+    ctx.translate(x, y);
+    ctx.rotate(rotation * Math.PI / 180);
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = size * 0.06;
+    ctx.shadowOffsetX = size * 0.02;
+    ctx.shadowOffsetY = size * 0.03;
+
     ctx.globalAlpha = mods.opacity;
-    ctx.translate(x + mods.x, y + mods.y);
-    ctx.rotate((overlayRotation + (mods.rotation || 0)) * Math.PI / 180);
     ctx.scale(mods.scaleX, mods.scaleY);
     ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
     ctx.restore();
-
-    // Hologram effects on top
-    this._drawScanlines(x + mods.x, y + mods.y, size, elapsed);
-    this._drawEdgeGlow(x + mods.x, y + mods.y, size, elapsed);
   }
 
-  _drawHologramGlow(x, y, size, t) {
-    const { ctx } = this;
-    const pulse = 0.3 + Math.sin(t * 2) * 0.15;
-    const r = size * 0.6;
-
-    ctx.save();
-    const gradient = ctx.createRadialGradient(x, y, 0, x, y, r);
-    gradient.addColorStop(0, `rgba(200, 230, 255, ${pulse})`);
-    gradient.addColorStop(0.5, `rgba(150, 200, 255, ${pulse * 0.4})`);
-    gradient.addColorStop(1, 'rgba(150, 200, 255, 0)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-    ctx.restore();
-  }
-
-  _drawGlow(x, y, size, color, t) {
-    const { ctx } = this;
-    const pulse = 0.4 + Math.sin(t * 3) * 0.2;
-    const r = size * 0.7;
-
-    ctx.save();
-    const gradient = ctx.createRadialGradient(x, y, size * 0.2, x, y, r);
-    gradient.addColorStop(0, color.replace(/[\d.]+\)$/, `${pulse})`));
-    gradient.addColorStop(1, color.replace(/[\d.]+\)$/, '0)'));
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-    ctx.restore();
-  }
-
-  _drawScanlines(x, y, size, t) {
+  _drawHologram(sprite, x, y, size, rotation, mods, t) {
     const { ctx } = this;
     const half = size / 2;
 
-    // Moving scanline bar
-    const sweepY = ((t * 0.4) % 1) * size;
+    // Outer glow (subtle, color based on type)
+    const glowColor = mods.glowColor || 'rgba(200, 220, 255, 0.25)';
+    const glowPulse = 0.6 + Math.sin(t * 2.5) * 0.4;
+
     ctx.save();
-    ctx.globalAlpha = 0.15;
-    ctx.fillStyle = '#ffffff';
-    const barHeight = size * 0.08;
-    ctx.fillRect(x - half, y - half + sweepY, size, barHeight);
+    ctx.translate(x, y);
+    ctx.rotate(rotation * Math.PI / 180);
+
+    // Glow behind sprite
+    ctx.save();
+    ctx.globalAlpha = glowPulse * 0.3;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = size * 0.15;
+    ctx.fillStyle = glowColor;
+    ctx.fillRect(-half * 0.9, -half * 0.9, size * 0.9, size * 0.9);
     ctx.restore();
 
-    // Static horizontal lines
-    ctx.save();
-    ctx.globalAlpha = 0.06;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1;
-    for (let ly = -half; ly < half; ly += 3) {
-      ctx.beginPath();
-      ctx.moveTo(x - half, y + ly);
-      ctx.lineTo(x + half, y + ly);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
+    // Main sprite
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = mods.opacity;
+    ctx.scale(mods.scaleX, mods.scaleY);
+    ctx.drawImage(sprite, -half, -half, size, size);
 
-  _drawEdgeGlow(x, y, size, t) {
-    const { ctx } = this;
-    const half = size / 2;
-    const pulse = 0.2 + Math.sin(t * 1.5) * 0.1;
-
-    ctx.save();
-    ctx.strokeStyle = `rgba(200, 230, 255, ${pulse})`;
-    ctx.lineWidth = 2;
-    ctx.shadowColor = 'rgba(150, 200, 255, 0.6)';
-    ctx.shadowBlur = 8;
-    ctx.strokeRect(x - half - 2, y - half - 2, size + 4, size + 4);
     ctx.restore();
   }
 

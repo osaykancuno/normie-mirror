@@ -60,6 +60,27 @@ export function mountCamera(container) {
 
   topBar.append(backBtn, normieLabel, flipBtn);
 
+  // Mode toggle (AR vs Solid)
+  const modeBar = el('div', {
+    className: 'filter-bar',
+    style: { bottom: '150px' },
+  });
+  const modes = [
+    { key: 'ar', label: 'HOLOGRAM' },
+    { key: 'solid', label: 'ORIGINAL' },
+  ];
+  modes.forEach(m => {
+    const chip = el('button', {
+      className: `filter-chip${state.displayMode === m.key ? ' filter-chip--active' : ''}`,
+      onClick: () => {
+        setState({ displayMode: m.key });
+        modeBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('filter-chip--active'));
+        chip.classList.add('filter-chip--active');
+      }
+    }, m.label);
+    modeBar.appendChild(chip);
+  });
+
   // Filter bar
   const filterBar = el('div', { className: 'filter-bar' });
   const filters = getFilterNames();
@@ -71,7 +92,7 @@ export function mountCamera(container) {
         filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('filter-chip--active'));
         chip.classList.add('filter-chip--active');
       }
-    }, name === 'none' ? 'ORIGINAL' : name.toUpperCase());
+    }, name === 'none' ? 'NONE' : name.toUpperCase());
     filterBar.appendChild(chip);
   });
 
@@ -140,7 +161,7 @@ export function mountCamera(container) {
   bottomBar.append(qrBtn, shutterBtn, shareBtn);
 
   // Assemble
-  screen.append(cameraContainer, topBar, filterBar, bottomBar);
+  screen.append(cameraContainer, topBar, modeBar, filterBar, bottomBar);
   container.appendChild(screen);
 
   // Auto-hide controls
@@ -150,6 +171,7 @@ export function mountCamera(container) {
     topBar.style.opacity = opacity;
     bottomBar.style.opacity = opacity;
     filterBar.style.opacity = opacity;
+    modeBar.style.opacity = opacity;
   }
 
   function resetControlsTimer() {
@@ -160,7 +182,7 @@ export function mountCamera(container) {
     }, 4000);
   }
 
-  [topBar, bottomBar, filterBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
+  [topBar, bottomBar, filterBar, modeBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
   screen.addEventListener('pointerdown', resetControlsTimer);
   resetControlsTimer();
 
