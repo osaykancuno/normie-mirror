@@ -8,8 +8,6 @@ const state = {
   overlayPosition: { x: 0.5, y: 0.5 },
   overlayScale: 1.0,
   overlayRotation: 0,
-  mode: 'camera', // 'camera' | 'mural'
-  perspectiveCorners: null,
   capturedMedia: null,
   capturedType: null, // 'photo' | 'video'
   isRecording: false,

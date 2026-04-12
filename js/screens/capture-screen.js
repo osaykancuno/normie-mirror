@@ -1,7 +1,7 @@
 // Normie Mirror — Capture review screen
 
 import { getState, setState } from '../state.js';
-import { el, createButton, showToast } from '../ui/components.js';
+import { el, showToast } from '../ui/components.js';
 import { shareImage, shareVideo, downloadBlob, canShare } from '../utils/share.js';
 import { navigateTo } from '../app.js';
 
@@ -10,9 +10,7 @@ export function mountCapture(container) {
   if (!capturedMedia) { navigateTo(`camera/${normieId || ''}`); return; }
 
   const screen = el('div', { className: 'screen screen--center' });
-  screen.style.background = 'var(--color-bg)';
-  screen.style.padding = '16px';
-  screen.style.gap = '16px';
+  screen.style.cssText = 'background:var(--color-bg); padding:24px; gap:20px;';
 
   const title = el('h2', { style: { textAlign: 'center' } },
     capturedType === 'video' ? 'VIDEO CAPTURED' : 'PHOTO CAPTURED'
@@ -21,12 +19,8 @@ export function mountCapture(container) {
   // Preview
   const previewContainer = el('div', {
     style: {
-      width: '100%',
-      maxWidth: '400px',
-      aspectRatio: '16/9',
-      border: '3px solid var(--color-dark)',
-      overflow: 'hidden',
-      background: '#000',
+      width: '100%', maxWidth: '400px', aspectRatio: '16/9',
+      border: '2px solid var(--color-border)', overflow: 'hidden', background: '#000',
     }
   });
 
@@ -34,10 +28,7 @@ export function mountCapture(container) {
     const url = URL.createObjectURL(capturedMedia);
     const videoEl = el('video', {
       style: { width: '100%', height: '100%', objectFit: 'contain' },
-      controls: '',
-      autoplay: '',
-      loop: '',
-      playsinline: '',
+      controls: '', autoplay: '', loop: '', playsinline: '',
     });
     videoEl.src = url;
     previewContainer.appendChild(videoEl);
@@ -52,46 +43,59 @@ export function mountCapture(container) {
 
   // Buttons
   const btnContainer = el('div', {
-    style: { display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }
+    style: { display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }
   });
 
   if (canShare()) {
-    const shareBtn = createButton('Share', async () => {
-      try {
-        if (capturedType === 'video') await shareVideo(capturedMedia);
-        else await shareImage(capturedMedia);
-      } catch (err) {
-        if (err.name !== 'AbortError') showToast('Share failed');
+    const shareBtn = el('button', {
+      className: 'btn btn--primary',
+      onClick: async () => {
+        try {
+          if (capturedType === 'video') await shareVideo(capturedMedia);
+          else await shareImage(capturedMedia);
+        } catch (err) {
+          if (err.name !== 'AbortError') showToast('Share failed');
+        }
       }
-    }, 'primary');
+    }, 'SHARE');
     btnContainer.appendChild(shareBtn);
   }
 
-  const downloadBtn = createButton('Download', () => {
-    const ext = capturedType === 'video' ? 'webm' : 'png';
-    downloadBlob(capturedMedia, `normie-mirror.${ext}`);
-    showToast('Downloaded!');
-  }, 'ghost');
+  const downloadBtn = el('button', {
+    className: 'btn',
+    onClick: () => {
+      const ext = capturedType === 'video' ? 'webm' : 'png';
+      downloadBlob(capturedMedia, `normie-mirror.${ext}`);
+      showToast('Downloaded!');
+    }
+  }, 'DOWNLOAD');
 
-  const retakeBtn = createButton('Retake', () => {
-    setState({ capturedMedia: null, capturedType: null });
-    navigateTo(`camera/${normieId || ''}`);
-  }, 'ghost');
+  const retakeBtn = el('button', {
+    className: 'btn btn--ghost',
+    onClick: () => {
+      setState({ capturedMedia: null, capturedType: null });
+      navigateTo(`camera/${normieId || ''}`);
+    }
+  }, 'RETAKE');
 
-  const homeBtn = createButton('Home', () => {
-    setState({ capturedMedia: null, capturedType: null });
-    navigateTo('');
-  }, 'ghost');
+  // Share to X
+  const tweetBtn = el('button', {
+    className: 'btn',
+    onClick: () => {
+      const appUrl = `${window.location.origin}${window.location.pathname}?id=${normieId}`;
+      const text = `Just a Normie IRL \u{1F4F7}\n\nSee Normie #${normieId} in AR:\n${appUrl}\n\n#NormieMirror #Normies #CC0`;
+      window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener,width=550,height=420');
+    }
+  }, 'POST ON X');
 
-  btnContainer.append(downloadBtn, retakeBtn, homeBtn);
+  btnContainer.append(downloadBtn, tweetBtn, retakeBtn);
 
   screen.append(title, previewContainer, btnContainer);
   container.appendChild(screen);
 
   return () => {
-    // Clean up object URLs
     previewContainer.querySelectorAll('img, video').forEach(el => {
-      if (el.src.startsWith('blob:')) URL.revokeObjectURL(el.src);
+      if (el.src && el.src.startsWith('blob:')) URL.revokeObjectURL(el.src);
     });
   };
 }

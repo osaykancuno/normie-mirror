@@ -1,31 +1,24 @@
-// Normie Mirror — Trait-based animation engine
+// Normie Mirror — Trait-based animation engine (enhanced)
 
-// Maps Expression trait to animation behavior
 const EXPRESSION_ANIMS = {
-  'Peaceful':  { type: 'breathe',  speed: 0.5, amplitude: 4 },
-  'Serious':   { type: 'breathe',  speed: 0.3, amplitude: 2 },
-  'Surprised': { type: 'bounce',   speed: 1.2, amplitude: 8 },
-  'Happy':     { type: 'bounce',   speed: 0.8, amplitude: 6 },
-  'Angry':     { type: 'shake',    speed: 1.5, amplitude: 3 },
-  'Wink':      { type: 'bounce',   speed: 0.6, amplitude: 4 },
-  'Smirk':     { type: 'breathe',  speed: 0.4, amplitude: 3 },
+  'Peaceful':  { type: 'breathe',  speed: 0.6, amplitude: 6 },
+  'Serious':   { type: 'breathe',  speed: 0.35, amplitude: 3 },
+  'Surprised': { type: 'bounce',   speed: 1.5, amplitude: 12 },
+  'Happy':     { type: 'bounce',   speed: 1.0, amplitude: 10 },
+  'Angry':     { type: 'shake',    speed: 2.0, amplitude: 5 },
+  'Wink':      { type: 'bounce',   speed: 0.7, amplitude: 6 },
+  'Smirk':     { type: 'breathe',  speed: 0.5, amplitude: 4 },
 };
 
-// Maps Type trait to glow
 const TYPE_GLOW = {
-  'Cat':   { glow: true, color: 'rgba(255, 153, 0, 0.4)' },
-  'Alien': { glow: true, color: 'rgba(0, 255, 204, 0.4)' },
-  'Agent': { glow: true, color: 'rgba(150, 0, 255, 0.4)' },
+  'Cat':   { glow: true, color: 'rgba(255, 180, 50, 0.5)' },
+  'Alien': { glow: true, color: 'rgba(0, 255, 200, 0.5)' },
+  'Agent': { glow: true, color: 'rgba(180, 80, 255, 0.5)' },
 };
 
-// Hologram flicker parameters
-const FLICKER_CHANCE = 0.003; // per frame
-const FLICKER_DURATION = 0.08; // seconds
+const FLICKER_CHANCE = 0.005;
+const FLICKER_DURATION = 0.1;
 
-/**
- * Create an animation function based on Normie traits.
- * Returns a function (time, defaults) => modifiers
- */
 export function createAnimationFn(traits) {
   const expression = traits?.Expression || traits?.expression || 'Peaceful';
   const type = traits?.Type || traits?.type || 'Human';
@@ -37,32 +30,31 @@ export function createAnimationFn(traits) {
 
   return function animate(time, defaults) {
     const mods = {
-      x: defaults.x || 0,
-      y: defaults.y || 0,
-      rotation: defaults.rotation || 0,
-      opacity: defaults.opacity || 1,
-      scaleX: defaults.scaleX || 1,
-      scaleY: defaults.scaleY || 1,
+      x: 0, y: 0, rotation: 0,
+      opacity: 1, scaleX: 1, scaleY: 1,
       glowColor: glowInfo ? glowInfo.color : null,
     };
 
     const t = time * anim.speed;
 
-    // Movement animation
     switch (anim.type) {
       case 'breathe':
-        mods.y += Math.sin(t * Math.PI * 2) * anim.amplitude;
+        mods.y = Math.sin(t * Math.PI * 2) * anim.amplitude;
+        // Subtle rotation sway
+        mods.rotation = Math.sin(t * Math.PI) * 1.5;
         break;
 
-      case 'bounce':
+      case 'bounce': {
         const bounce = Math.abs(Math.sin(t * Math.PI * 2));
-        mods.y -= bounce * anim.amplitude;
-        mods.scaleY = 1 + Math.sin(t * Math.PI * 2) * 0.02;
-        mods.scaleX = 1 - Math.sin(t * Math.PI * 2) * 0.01;
+        mods.y = -bounce * anim.amplitude;
+        mods.scaleY = 1 + Math.sin(t * Math.PI * 2) * 0.04;
+        mods.scaleX = 1 - Math.sin(t * Math.PI * 2) * 0.02;
         break;
+      }
 
       case 'shake':
-        mods.x += Math.sin(t * Math.PI * 8) * anim.amplitude;
+        mods.x = Math.sin(t * Math.PI * 8) * anim.amplitude;
+        mods.rotation = Math.sin(t * Math.PI * 6) * 2;
         break;
     }
 
@@ -71,27 +63,9 @@ export function createAnimationFn(traits) {
       flickerEnd = time + FLICKER_DURATION;
     }
     if (time < flickerEnd) {
-      mods.opacity = 0.7 + Math.random() * 0.2;
+      mods.opacity = 0.5 + Math.random() * 0.3;
     }
 
     return mods;
-  };
-}
-
-/**
- * Get a description of the animation for UI display.
- */
-export function getAnimationInfo(traits) {
-  const expression = traits?.Expression || traits?.expression || 'Peaceful';
-  const type = traits?.Type || traits?.type || 'Human';
-  const anim = EXPRESSION_ANIMS[expression] || EXPRESSION_ANIMS['Peaceful'];
-  const glow = TYPE_GLOW[type];
-
-  return {
-    movement: anim.type,
-    hasGlow: !!glow,
-    glowColor: glow?.color || null,
-    expression,
-    type,
   };
 }

@@ -4,7 +4,6 @@ import { getState, setState } from './state.js';
 import { loadRecentNormies } from './utils/storage.js';
 import { mountHome } from './screens/home-screen.js';
 import { mountCamera } from './screens/camera-screen.js';
-import { mountMural } from './screens/mural-screen.js';
 import { mountCapture } from './screens/capture-screen.js';
 import { mountQR } from './screens/qr-screen.js';
 
@@ -14,7 +13,6 @@ let currentUnmount = null;
 const routes = {
   '':        mountHome,
   'camera':  mountCamera,
-  'mural':   mountMural,
   'capture': mountCapture,
   'qr':      mountQR,
 };

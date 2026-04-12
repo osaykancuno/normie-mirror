@@ -1,6 +1,6 @@
 // Normie Mirror — Camera AR Screen
 
-import { getState, setState, subscribe } from '../state.js';
+import { getState, setState } from '../state.js';
 import { loadNormie } from '../api/normies.js';
 import { cachedFetch } from '../api/cache.js';
 import { CameraManager } from '../camera/camera-manager.js';
@@ -22,36 +22,35 @@ export function mountCamera(container) {
   let overlay = null;
   let touch = null;
   let videoCapture = null;
-  let controlsHideTimer = null;
+  let controlsVisible = true;
+  let controlsTimer = null;
 
-  // DOM structure
+  // DOM
   const screen = el('div', { className: 'screen' });
-
   const cameraContainer = el('div', { className: 'camera-container' });
-  const video = el('video', {
-    className: 'camera-video',
-    playsinline: '',
-    autoplay: '',
-    muted: '',
-  });
+  const video = el('video', { className: 'camera-video', playsinline: '', autoplay: '', muted: '' });
   const overlayCanvas = el('canvas', { className: 'camera-overlay' });
-
   cameraContainer.append(video, overlayCanvas);
 
   // Top toolbar
   const topBar = el('div', { className: 'toolbar toolbar--top' });
+
   const backBtn = el('button', {
-    className: 'btn btn--icon btn--ghost',
+    className: 'btn btn--icon',
     onClick: () => navigateTo('')
   });
   backBtn.appendChild(icon('back', 20));
 
   const normieLabel = el('span', {
-    style: { fontFamily: 'var(--font-pixel)', fontSize: '10px', color: '#fff' }
+    style: {
+      fontFamily: 'var(--font-pixel)', fontSize: '9px', color: '#fff',
+      background: 'rgba(0,0,0,0.4)', padding: '6px 10px',
+      backdropFilter: 'blur(4px)',
+    }
   }, `#${normieId}`);
 
   const flipBtn = el('button', {
-    className: 'btn btn--icon btn--ghost',
+    className: 'btn btn--icon',
     onClick: async () => {
       await camera.flip();
       setState({ cameraFacing: camera.facing });
@@ -60,9 +59,6 @@ export function mountCamera(container) {
   flipBtn.appendChild(icon('flip', 20));
 
   topBar.append(backBtn, normieLabel, flipBtn);
-
-  // Bottom toolbar
-  const bottomBar = el('div', { className: 'toolbar' });
 
   // Filter bar
   const filterBar = el('div', { className: 'filter-bar' });
@@ -75,31 +71,24 @@ export function mountCamera(container) {
         filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('filter-chip--active'));
         chip.classList.add('filter-chip--active');
       }
-    }, name.toUpperCase());
+    }, name === 'none' ? 'ORIGINAL' : name.toUpperCase());
     filterBar.appendChild(chip);
   });
 
-  // Mural mode button
-  const muralBtn = el('button', {
-    className: 'btn btn--icon btn--ghost',
-    onClick: () => navigateTo(`mural/${normieId}`),
-    title: 'Mural Mode'
-  });
-  muralBtn.appendChild(icon('mural', 20));
+  // Bottom toolbar
+  const bottomBar = el('div', { className: 'toolbar' });
 
   // QR button
   const qrBtn = el('button', {
-    className: 'btn btn--icon btn--ghost',
+    className: 'btn btn--icon',
     onClick: () => navigateTo(`qr/${normieId}`),
-    title: 'QR Code'
   });
   qrBtn.appendChild(icon('qr', 20));
 
   // Shutter
   const shutterBtn = createShutterButton(
-    // Tap: photo
     async () => {
-      if (state.isRecording) return;
+      if (getState().isRecording) return;
       showToast('Capturing...');
       try {
         const blob = await capturePhoto(video, overlayCanvas, getState().activeFilter);
@@ -109,10 +98,9 @@ export function mountCamera(container) {
         showToast('Capture failed');
       }
     },
-    // Long press: video
     () => {
       if (!VideoCapture.isSupported()) {
-        showToast('Video not supported');
+        showToast('Video not supported on this device');
         return;
       }
       videoCapture = new VideoCapture(video, overlayCanvas, getState().activeFilter);
@@ -124,7 +112,6 @@ export function mountCamera(container) {
     }
   );
 
-  // Stop recording on tap when recording
   shutterBtn.addEventListener('pointerup', async () => {
     if (getState().isRecording && videoCapture) {
       const blob = await videoCapture.stop();
@@ -134,36 +121,51 @@ export function mountCamera(container) {
     }
   });
 
-  bottomBar.append(muralBtn, shutterBtn, qrBtn);
+  // Share/download button
+  const shareBtn = el('button', {
+    className: 'btn btn--icon',
+    onClick: async () => {
+      showToast('Capturing...');
+      try {
+        const blob = await capturePhoto(video, overlayCanvas, getState().activeFilter);
+        setState({ capturedMedia: blob, capturedType: 'photo' });
+        navigateTo('capture');
+      } catch (err) {
+        showToast('Failed');
+      }
+    }
+  });
+  shareBtn.appendChild(icon('share', 20));
+
+  bottomBar.append(qrBtn, shutterBtn, shareBtn);
 
   // Assemble
   screen.append(cameraContainer, topBar, filterBar, bottomBar);
   container.appendChild(screen);
 
   // Auto-hide controls
-  function showControls() {
-    topBar.style.opacity = '1';
-    bottomBar.style.opacity = '1';
-    filterBar.style.opacity = '1';
-    clearTimeout(controlsHideTimer);
-    controlsHideTimer = setTimeout(() => {
-      if (!getState().isRecording) {
-        topBar.style.opacity = '0';
-        bottomBar.style.opacity = '0';
-        filterBar.style.opacity = '0';
-      }
-    }, 3000);
+  function setControlsVisible(show) {
+    controlsVisible = show;
+    const opacity = show ? '1' : '0';
+    topBar.style.opacity = opacity;
+    bottomBar.style.opacity = opacity;
+    filterBar.style.opacity = opacity;
   }
 
-  [topBar, bottomBar, filterBar].forEach(el => {
-    el.style.transition = 'opacity 0.3s';
-  });
-  screen.addEventListener('pointerdown', showControls);
-  showControls();
+  function resetControlsTimer() {
+    setControlsVisible(true);
+    clearTimeout(controlsTimer);
+    controlsTimer = setTimeout(() => {
+      if (!getState().isRecording) setControlsVisible(false);
+    }, 4000);
+  }
+
+  [topBar, bottomBar, filterBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
+  screen.addEventListener('pointerdown', resetControlsTimer);
+  resetControlsTimer();
 
   // Initialize
   async function init() {
-    // Load normie data if not in state
     let { pixelData, traits } = getState();
     if (!pixelData) {
       try {
@@ -178,23 +180,21 @@ export function mountCamera(container) {
       }
     }
 
-    // Start camera
     const success = await camera.start(video, state.cameraFacing);
     if (!success) {
       showToast('Camera access denied');
       return;
     }
 
-    // Wait for video to be ready
     await new Promise(resolve => {
       if (video.videoWidth > 0) resolve();
       else video.addEventListener('loadedmetadata', resolve, { once: true });
     });
 
-    // Size overlay to match video display
     const resizeOverlay = () => {
-      overlayCanvas.width = cameraContainer.clientWidth * window.devicePixelRatio;
-      overlayCanvas.height = cameraContainer.clientHeight * window.devicePixelRatio;
+      const dpr = window.devicePixelRatio || 1;
+      overlayCanvas.width = cameraContainer.clientWidth * dpr;
+      overlayCanvas.height = cameraContainer.clientHeight * dpr;
       overlayCanvas.style.width = cameraContainer.clientWidth + 'px';
       overlayCanvas.style.height = cameraContainer.clientHeight + 'px';
       if (overlay) overlay.resize(overlayCanvas.width, overlayCanvas.height);
@@ -202,13 +202,11 @@ export function mountCamera(container) {
     resizeOverlay();
     window.addEventListener('resize', resizeOverlay);
 
-    // Init AR overlay
     overlay = new AROverlay(overlayCanvas);
     overlay.loadSprite(pixelData);
     overlay.setAnimationFn(createAnimationFn(traits));
     overlay.start();
 
-    // Init touch controls
     touch = new TouchControls(overlayCanvas, {
       onMove: (dx, dy) => {
         const pos = getState().overlayPosition;
@@ -221,7 +219,7 @@ export function mountCamera(container) {
       },
       onScale: (delta) => {
         const scale = getState().overlayScale;
-        setState({ overlayScale: Math.max(0.2, Math.min(3, scale * delta)) });
+        setState({ overlayScale: Math.max(0.15, Math.min(4, scale * delta)) });
       },
       onRotate: (degrees) => {
         const rot = getState().overlayRotation;
@@ -232,12 +230,11 @@ export function mountCamera(container) {
 
   init();
 
-  // Unmount
   return () => {
     camera.stop();
     if (overlay) overlay.stop();
     if (touch) touch.destroy();
     if (videoCapture && getState().isRecording) videoCapture.stop();
-    clearTimeout(controlsHideTimer);
+    clearTimeout(controlsTimer);
   };
 }

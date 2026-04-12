@@ -39,10 +39,25 @@ export async function capturePhoto(video, overlayCanvas, filter = 'none') {
 }
 
 function drawWatermark(ctx, w, h) {
+  const fontSize = Math.max(12, Math.round(w * 0.015));
   ctx.save();
-  ctx.font = '12px "Press Start 2P", monospace';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-  ctx.textAlign = 'right';
-  ctx.fillText('normies.art', w - 12, h - 12);
+
+  // Background pill
+  ctx.font = `${fontSize}px "Press Start 2P", monospace`;
+  const text = 'NORMIE MIRROR';
+  const metrics = ctx.measureText(text);
+  const px = fontSize * 0.6;
+  const py = fontSize * 0.4;
+  const bx = w - metrics.width - px * 2 - 8;
+  const by = h - fontSize - py * 2 - 8;
+
+  ctx.fillStyle = 'rgba(72, 73, 75, 0.6)';
+  ctx.fillRect(bx, by, metrics.width + px * 2, fontSize + py * 2);
+
+  ctx.fillStyle = 'rgba(227, 229, 228, 0.9)';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(text, bx + px, by + py);
+
   ctx.restore();
 }
