@@ -178,6 +178,7 @@ export function mountHome(container) {
   let loading = false;
   let currentPixels = null;
   let currentTraits = null;
+  let gifBusy = false;
 
   function shareToTwitter() {
     const { normieId } = getState();
@@ -212,14 +213,15 @@ export function mountHome(container) {
   }
 
   async function handleGifExport() {
-    if (!currentPixels || !currentTraits) return;
+    if (!currentPixels || !currentTraits || gifBusy) return;
+    gifBusy = true;
     const { normieId } = getState();
 
     gifBtn.textContent = 'GENERATING...';
     gifBtn.disabled = true;
 
-    // Use setTimeout to let UI update before heavy work
-    await new Promise(r => setTimeout(r, 50));
+    const yieldUI = () => new Promise(r => setTimeout(r, 0));
+    await yieldUI();
 
     try {
       const encoder = new GIFEncoder(GIF_SIZE, GIF_SIZE);
@@ -232,18 +234,14 @@ export function mountHome(container) {
       const animFn = createAnimationFn(currentTraits);
 
       for (let i = 0; i < GIF_FRAMES; i++) {
-        const t = (i / GIF_FRAMES) * 2; // 2 seconds of animation
+        const t = (i / GIF_FRAMES) * 2;
 
         ctx.clearRect(0, 0, GIF_SIZE, GIF_SIZE);
-
-        // Background
         ctx.fillStyle = '#e3e5e4';
         ctx.fillRect(0, 0, GIF_SIZE, GIF_SIZE);
 
-        // Get animation mods
         const mods = animFn(t);
 
-        // Draw sprite centered with animation
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         const drawSize = GIF_SIZE * 0.85;
@@ -257,15 +255,20 @@ export function mountHome(container) {
 
         const imageData = ctx.getImageData(0, 0, GIF_SIZE, GIF_SIZE);
         encoder.addFrame(imageData, GIF_DELAY);
+
+        // Yield to UI every few frames
+        if (i % 4 === 3) await yieldUI();
       }
 
+      await yieldUI();
       const data = encoder.encode();
       const blob = new Blob([data], { type: 'image/gif' });
       downloadBlob(blob, `normie-${normieId}-animated.gif`);
       showToast('GIF saved!');
-    } catch (err) {
+    } catch {
       showToast('GIF generation failed');
     } finally {
+      gifBusy = false;
       gifBtn.textContent = 'GIF ANIM';
       gifBtn.disabled = false;
     }

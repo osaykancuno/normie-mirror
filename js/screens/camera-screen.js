@@ -1,4 +1,4 @@
-// Normie Mirror — Camera AR Screen (multi-normie support)
+// Normie Mirror — Camera AR Screen
 
 import { getState, setState } from '../state.js';
 import { loadNormie } from '../api/normies.js';
@@ -12,9 +12,6 @@ import { VideoCapture } from '../capture/video-capture.js';
 import { el, icon, showToast, createShutterButton } from '../ui/components.js';
 import { navigateTo } from '../app.js';
 
-const MAX_NORMIES = 3;
-const MAX_NORMIE_ID = 6969;
-
 export function mountCamera(container) {
   const state = getState();
   const normieId = state.normieId;
@@ -24,9 +21,9 @@ export function mountCamera(container) {
   let overlay = null;
   let touch = null;
   let videoCapture = null;
-  let controlsVisible = true;
   let controlsTimer = null;
-  const extraNormieIds = []; // track added IDs
+  let resizeHandler = null;
+  let unmounted = false;
 
   // DOM
   const screen = el('div', { className: 'screen' });
@@ -40,7 +37,7 @@ export function mountCamera(container) {
 
   const backBtn = el('button', {
     className: 'btn btn--icon',
-    onClick: () => navigateTo('')
+    onClick: () => navigateTo(''),
   });
   backBtn.appendChild(icon('back', 20));
 
@@ -63,7 +60,7 @@ export function mountCamera(container) {
 
   topBar.append(backBtn, normieLabel, flipBtn);
 
-  // Mode toggle (AR vs Solid)
+  // Mode toggle (Hologram vs Original)
   const modeBar = el('div', {
     className: 'filter-bar',
     style: { bottom: '150px' },
@@ -84,74 +81,24 @@ export function mountCamera(container) {
     modeBar.appendChild(chip);
   });
 
-  // Add Normie bar (multi-normie controls)
-  const addBar = el('div', {
-    className: 'filter-bar',
-    style: { bottom: '190px' },
-  });
-  const addBtn = el('button', {
-    className: 'filter-chip',
-    onClick: () => handleAddNormie(),
-  }, '+ ADD NORMIE');
-  const countChip = el('span', {
-    className: 'filter-chip',
-    style: { pointerEvents: 'none' },
-  }, '1/' + MAX_NORMIES);
-  addBar.append(addBtn, countChip);
-
-  function updateCountChip() {
-    if (!overlay) return;
-    const n = overlay.getSpriteCount();
-    countChip.textContent = `${n}/${MAX_NORMIES}`;
-    addBtn.style.display = n >= MAX_NORMIES ? 'none' : '';
-  }
-
-  async function handleAddNormie() {
-    if (!overlay || overlay.getSpriteCount() >= MAX_NORMIES) return;
-
-    // Pick a random ID different from current ones
-    let newId;
-    const usedIds = [normieId, ...extraNormieIds];
-    do {
-      newId = Math.floor(Math.random() * MAX_NORMIE_ID) + 1;
-    } while (usedIds.includes(newId));
-
-    showToast(`Adding #${newId}...`);
-    try {
-      const data = await cachedFetch(`normie_${newId}`, () => loadNormie(newId));
-      const idx = overlay.loadSprite(data.pixels, newId);
-      overlay.setAnimationFn(createAnimationFn(data.traits), idx);
-      extraNormieIds.push(newId);
-      updateCountChip();
-
-      // Update label
-      const ids = [normieId, ...extraNormieIds];
-      normieLabel.textContent = ids.map(id => `#${id}`).join(' ');
-    } catch {
-      showToast('Failed to add Normie');
-    }
-  }
-
   // Bottom toolbar
   const bottomBar = el('div', { className: 'toolbar' });
 
-  // QR button
   const qrBtn = el('button', {
     className: 'btn btn--icon',
     onClick: () => navigateTo(`qr/${normieId}`),
   });
   qrBtn.appendChild(icon('qr', 20));
 
-  // Shutter
   const shutterBtn = createShutterButton(
     async () => {
       if (getState().isRecording) return;
       showToast('Capturing...');
       try {
-        const blob = await capturePhoto(video, overlayCanvas, 'none');
+        const blob = await capturePhoto(video, overlayCanvas);
         setState({ capturedMedia: blob, capturedType: 'photo' });
         navigateTo('capture');
-      } catch (err) {
+      } catch {
         showToast('Capture failed');
       }
     },
@@ -160,7 +107,7 @@ export function mountCamera(container) {
         showToast('Video not supported on this device');
         return;
       }
-      videoCapture = new VideoCapture(video, overlayCanvas, 'none');
+      videoCapture = new VideoCapture(video, overlayCanvas);
       if (videoCapture.start()) {
         setState({ isRecording: true });
         shutterBtn.classList.add('shutter-btn--recording');
@@ -178,16 +125,15 @@ export function mountCamera(container) {
     }
   });
 
-  // Share button
   const shareBtn = el('button', {
     className: 'btn btn--icon',
     onClick: async () => {
       showToast('Capturing...');
       try {
-        const blob = await capturePhoto(video, overlayCanvas, 'none');
+        const blob = await capturePhoto(video, overlayCanvas);
         setState({ capturedMedia: blob, capturedType: 'photo' });
         navigateTo('capture');
-      } catch (err) {
+      } catch {
         showToast('Failed');
       }
     }
@@ -197,17 +143,15 @@ export function mountCamera(container) {
   bottomBar.append(qrBtn, shutterBtn, shareBtn);
 
   // Assemble
-  screen.append(cameraContainer, topBar, addBar, modeBar, bottomBar);
+  screen.append(cameraContainer, topBar, modeBar, bottomBar);
   container.appendChild(screen);
 
   // Auto-hide controls
   function setControlsVisible(show) {
-    controlsVisible = show;
     const opacity = show ? '1' : '0';
     topBar.style.opacity = opacity;
     bottomBar.style.opacity = opacity;
     modeBar.style.opacity = opacity;
-    addBar.style.opacity = opacity;
   }
 
   function resetControlsTimer() {
@@ -218,20 +162,21 @@ export function mountCamera(container) {
     }, 4000);
   }
 
-  [topBar, bottomBar, modeBar, addBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
+  [topBar, bottomBar, modeBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
   screen.addEventListener('pointerdown', resetControlsTimer);
   resetControlsTimer();
 
-  // Initialize
   async function init() {
     let { pixelData, traits } = getState();
     if (!pixelData) {
       try {
         const data = await cachedFetch(`normie_${normieId}`, () => loadNormie(normieId));
+        if (unmounted) return;
         setState({ pixelData: data.pixels, traits: data.traits, metadata: data.metadata });
         pixelData = data.pixels;
         traits = data.traits;
-      } catch (err) {
+      } catch {
+        if (unmounted) return;
         showToast('Failed to load Normie');
         navigateTo('');
         return;
@@ -239,6 +184,7 @@ export function mountCamera(container) {
     }
 
     const success = await camera.start(video, state.cameraFacing);
+    if (unmounted) { camera.stop(); return; }
     if (!success) {
       showToast('Camera access denied');
       return;
@@ -248,8 +194,9 @@ export function mountCamera(container) {
       if (video.videoWidth > 0) resolve();
       else video.addEventListener('loadedmetadata', resolve, { once: true });
     });
+    if (unmounted) { camera.stop(); return; }
 
-    const resizeOverlay = () => {
+    resizeHandler = () => {
       const dpr = window.devicePixelRatio || 1;
       overlayCanvas.width = cameraContainer.clientWidth * dpr;
       overlayCanvas.height = cameraContainer.clientHeight * dpr;
@@ -257,14 +204,13 @@ export function mountCamera(container) {
       overlayCanvas.style.height = cameraContainer.clientHeight + 'px';
       if (overlay) overlay.resize(overlayCanvas.width, overlayCanvas.height);
     };
-    resizeOverlay();
-    window.addEventListener('resize', resizeOverlay);
+    resizeHandler();
+    window.addEventListener('resize', resizeHandler);
 
     overlay = new AROverlay(overlayCanvas);
-    overlay.loadSprite(pixelData, normieId);
-    overlay.setAnimationFn(createAnimationFn(traits), 0);
+    overlay.loadSprite(pixelData);
+    overlay.setAnimationFn(createAnimationFn(traits));
     overlay.start();
-    updateCountChip();
 
     touch = new TouchControls(overlayCanvas, {
       onMove: (dx, dy) => {
@@ -290,10 +236,12 @@ export function mountCamera(container) {
   init();
 
   return () => {
+    unmounted = true;
     camera.stop();
     if (overlay) overlay.stop();
     if (touch) touch.destroy();
     if (videoCapture && getState().isRecording) videoCapture.stop();
+    if (resizeHandler) window.removeEventListener('resize', resizeHandler);
     clearTimeout(controlsTimer);
   };
 }

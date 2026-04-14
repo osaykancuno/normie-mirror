@@ -1,12 +1,9 @@
-// Normie Mirror — Video capture (MediaRecorder + fallback)
-
-import { applyFilter } from './filters.js';
+// Normie Mirror — Video capture (MediaRecorder + canvas composite)
 
 export class VideoCapture {
-  constructor(video, overlayCanvas, filter = 'none') {
+  constructor(video, overlayCanvas) {
     this.video = video;
     this.overlayCanvas = overlayCanvas;
-    this.filter = filter;
     this.recorder = null;
     this.chunks = [];
     this.compositeCanvas = null;
@@ -25,10 +22,8 @@ export class VideoCapture {
     this.chunks = [];
     this.isRecording = true;
 
-    // Composite loop
     this._compositeLoop();
 
-    // Try MediaRecorder
     const stream = this.compositeCanvas.captureStream(30);
     const mimeTypes = [
       'video/webm;codecs=vp9',
@@ -55,7 +50,7 @@ export class VideoCapture {
     this.recorder.ondataavailable = (e) => {
       if (e.data.size > 0) this.chunks.push(e.data);
     };
-    this.recorder.start(100); // 100ms chunks
+    this.recorder.start(100);
     return true;
   }
 
@@ -84,15 +79,7 @@ export class VideoCapture {
     const w = this.compositeCanvas.width;
     const h = this.compositeCanvas.height;
 
-    // Draw video
     ctx.drawImage(this.video, 0, 0, w, h);
-
-    // Apply filter
-    if (this.filter !== 'none') {
-      applyFilter(ctx, w, h, this.filter);
-    }
-
-    // Draw overlay
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.overlayCanvas, 0, 0, w, h);
   }

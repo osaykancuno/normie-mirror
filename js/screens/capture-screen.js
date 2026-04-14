@@ -24,19 +24,19 @@ export function mountCapture(container) {
     }
   });
 
+  const blobUrl = URL.createObjectURL(capturedMedia);
+
   if (capturedType === 'video') {
-    const url = URL.createObjectURL(capturedMedia);
     const videoEl = el('video', {
       style: { width: '100%', height: '100%', objectFit: 'contain' },
       controls: '', autoplay: '', loop: '', playsinline: '',
     });
-    videoEl.src = url;
+    videoEl.src = blobUrl;
     previewContainer.appendChild(videoEl);
   } else {
-    const url = URL.createObjectURL(capturedMedia);
     const img = el('img', {
       style: { width: '100%', height: '100%', objectFit: 'contain' },
-      src: url,
+      src: blobUrl,
     });
     previewContainer.appendChild(img);
   }
@@ -94,8 +94,6 @@ export function mountCapture(container) {
   container.appendChild(screen);
 
   return () => {
-    previewContainer.querySelectorAll('img, video').forEach(el => {
-      if (el.src && el.src.startsWith('blob:')) URL.revokeObjectURL(el.src);
-    });
+    URL.revokeObjectURL(blobUrl);
   };
 }

@@ -1,16 +1,21 @@
 // Normie Mirror — Gallery Screen (wallet → grid of owned Normies)
 
-import { getState, setState } from '../state.js';
+import { setState } from '../state.js';
 import { getHoldings, loadNormie } from '../api/normies.js';
 import { cachedFetch } from '../api/cache.js';
 import { renderNormieToCanvas } from '../render/pixel-renderer.js';
 import { el, showToast } from '../ui/components.js';
 import { navigateTo } from '../app.js';
 
-const GRID_PX = 80; // each thumbnail size
-const BATCH = 8;     // load this many at a time
+const GRID_PX = 80;
+const BATCH = 6;
+const MAX_DISPLAY = 200; // hard cap to protect whales / the UI
+const MAX_NORMIE_ID = 6969;
 
 export function mountGallery(container) {
+  let unmounted = false;
+  let loading = false;
+
   const screen = el('div', { className: 'screen' });
   screen.style.cssText = 'align-items:center; padding:24px; overflow-y:auto;';
 
@@ -33,6 +38,8 @@ export function mountGallery(container) {
     className: 'input',
     type: 'text',
     placeholder: '0x...',
+    autocomplete: 'off',
+    spellcheck: 'false',
     style: { flex: '1', fontSize: '11px', letterSpacing: '0.5px' },
   });
   const searchBtn = el('button', {
@@ -42,7 +49,6 @@ export function mountGallery(container) {
   }, 'SEARCH');
   inputRow.append(input, searchBtn);
 
-  // Count label
   const countLabel = el('p', {
     style: {
       fontFamily: 'var(--font-pixel)', fontSize: '10px',
@@ -50,7 +56,6 @@ export function mountGallery(container) {
     }
   });
 
-  // Grid container
   const grid = el('div', {
     style: {
       display: 'grid',
@@ -61,28 +66,27 @@ export function mountGallery(container) {
     }
   });
 
-  // Back button
   const backBtn = el('button', {
     className: 'btn',
     onClick: () => navigateTo(''),
     style: { marginTop: '20px', marginBottom: '20px' },
   }, '\u2190 BACK');
 
-  // Footer
   const footer = el('div', { className: 'footer' });
   footer.innerHTML = 'built by <a href="https://x.com/osaykancuno" target="_blank" rel="noopener">osaykancuno</a>';
 
   screen.append(header, inputRow, countLabel, grid, backBtn, footer);
   container.appendChild(screen);
 
-  // Logic
-  let loading = false;
+  function isValidId(id) {
+    const n = Number(id);
+    return Number.isInteger(n) && n >= 0 && n <= MAX_NORMIE_ID;
+  }
 
   async function handleSearch() {
+    if (loading) return;
     const address = input.value.trim();
-    if (!address || loading) return;
 
-    // Validate
     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
       showToast('Invalid wallet address');
       return;
@@ -95,32 +99,38 @@ export function mountGallery(container) {
 
     try {
       const data = await getHoldings(address);
-      const ids = data.tokenIds || [];
+      if (unmounted) return;
 
-      if (ids.length === 0) {
+      const rawIds = Array.isArray(data?.tokenIds) ? data.tokenIds : [];
+      const validIds = rawIds.filter(isValidId).map(Number);
+
+      if (validIds.length === 0) {
         showToast('No Normies found');
-        loading = false;
-        searchBtn.textContent = 'SEARCH';
         return;
       }
 
-      countLabel.textContent = `${ids.length} NORMIE${ids.length !== 1 ? 'S' : ''}`;
+      const capped = validIds.slice(0, MAX_DISPLAY);
+      const truncated = validIds.length > MAX_DISPLAY;
+      countLabel.textContent = truncated
+        ? `${capped.length} OF ${validIds.length} NORMIES`
+        : `${capped.length} NORMIE${capped.length !== 1 ? 'S' : ''}`;
       countLabel.style.display = 'block';
 
-      // Load thumbnails in batches
-      for (let i = 0; i < ids.length; i += BATCH) {
-        const batch = ids.slice(i, i + BATCH);
-        await Promise.all(batch.map(id => loadThumbnail(id, grid)));
+      // Load thumbnails in batches with per-cell error isolation
+      for (let i = 0; i < capped.length; i += BATCH) {
+        if (unmounted) return;
+        const batch = capped.slice(i, i + BATCH);
+        await Promise.allSettled(batch.map(id => loadThumbnail(id)));
       }
-    } catch (err) {
-      showToast('Failed to load holdings');
+    } catch {
+      if (!unmounted) showToast('Failed to load holdings');
     } finally {
       loading = false;
-      searchBtn.textContent = 'SEARCH';
+      if (!unmounted) searchBtn.textContent = 'SEARCH';
     }
   }
 
-  async function loadThumbnail(id, container) {
+  async function loadThumbnail(id) {
     const cell = el('div', {
       style: {
         display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -149,10 +159,11 @@ export function mountGallery(container) {
     }, `#${id}`);
 
     cell.append(canvas, label);
-    container.appendChild(cell);
+    grid.appendChild(cell);
 
     try {
       const data = await cachedFetch(`normie_${id}`, () => loadNormie(id));
+      if (unmounted) return;
       const ctx = canvas.getContext('2d');
       renderNormieToCanvas(ctx, data.pixels, 0, 0, 2);
     } catch {
@@ -162,5 +173,5 @@ export function mountGallery(container) {
 
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSearch(); });
 
-  return () => {};
+  return () => { unmounted = true; };
 }

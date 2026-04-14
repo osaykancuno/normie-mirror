@@ -1,15 +1,12 @@
 // Normie Mirror — Photo capture (composite camera + overlay)
 
-import { applyFilter } from './filters.js';
-
 /**
  * Capture a photo compositing the video frame with the Normie overlay.
  * @param {HTMLVideoElement} video
  * @param {HTMLCanvasElement} overlayCanvas
- * @param {string} filter - filter name
  * @returns {Promise<Blob>}
  */
-export async function capturePhoto(video, overlayCanvas, filter = 'none') {
+export async function capturePhoto(video, overlayCanvas) {
   const w = video.videoWidth || 1280;
   const h = video.videoHeight || 720;
 
@@ -18,23 +15,18 @@ export async function capturePhoto(video, overlayCanvas, filter = 'none') {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
 
-  // Draw video frame
   ctx.drawImage(video, 0, 0, w, h);
 
-  // Apply filter to video frame
-  if (filter !== 'none') {
-    applyFilter(ctx, w, h, filter);
-  }
-
-  // Draw overlay (scale from overlay canvas size to video size)
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(overlayCanvas, 0, 0, w, h);
 
-  // Add watermark
   drawWatermark(ctx, w, h);
 
-  return new Promise((resolve) => {
-    canvas.toBlob(resolve, 'image/png');
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('toBlob failed'));
+    }, 'image/png');
   });
 }
 
@@ -42,7 +34,6 @@ function drawWatermark(ctx, w, h) {
   const fontSize = Math.max(12, Math.round(w * 0.015));
   ctx.save();
 
-  // Background pill
   ctx.font = `${fontSize}px "Press Start 2P", monospace`;
   const text = 'NORMIE MIRROR';
   const metrics = ctx.measureText(text);
