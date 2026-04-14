@@ -5,7 +5,6 @@ import { loadRecentNormies } from './utils/storage.js';
 import { mountHome } from './screens/home-screen.js';
 import { mountCamera } from './screens/camera-screen.js';
 import { mountCapture } from './screens/capture-screen.js';
-import { mountQR } from './screens/qr-screen.js';
 import { mountGallery } from './screens/gallery-screen.js';
 
 const app = document.getElementById('app');
@@ -15,7 +14,6 @@ const routes = {
   '':        mountHome,
   'camera':  mountCamera,
   'capture': mountCapture,
-  'qr':      mountQR,
   'gallery': mountGallery,
 };
 
@@ -44,7 +42,7 @@ function navigate() {
   currentUnmount = mountFn(app) || null;
 }
 
-// Handle ?id= query param (from QR codes)
+// Handle ?id= query param (deep link to a specific Normie)
 function handleQueryParam() {
   const params = new URLSearchParams(window.location.search);
   const id = params.get('id');

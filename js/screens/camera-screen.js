@@ -84,12 +84,6 @@ export function mountCamera(container) {
   // Bottom toolbar
   const bottomBar = el('div', { className: 'toolbar' });
 
-  const qrBtn = el('button', {
-    className: 'btn btn--icon',
-    onClick: () => navigateTo(`qr/${normieId}`),
-  });
-  qrBtn.appendChild(icon('qr', 20));
-
   const shutterBtn = createShutterButton(
     async () => {
       if (getState().isRecording) return;
@@ -140,7 +134,7 @@ export function mountCamera(container) {
   });
   shareBtn.appendChild(icon('share', 20));
 
-  bottomBar.append(qrBtn, shutterBtn, shareBtn);
+  bottomBar.append(shutterBtn, shareBtn);
 
   // Assemble
   screen.append(cameraContainer, topBar, modeBar, bottomBar);

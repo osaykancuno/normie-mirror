@@ -1,6 +1,6 @@
 // Normie Mirror — Service Worker
 
-const CACHE_SHELL = 'normie-mirror-shell-v5';
+const CACHE_SHELL = 'normie-mirror-shell-v6';
 const CACHE_API = 'normie-mirror-api-v1';
 const API_HOST = 'api.normies.art';
 
@@ -21,11 +21,9 @@ const SHELL_FILES = [
   '/js/capture/photo-capture.js',
   '/js/capture/video-capture.js',
   '/js/capture/gif-encoder.js',
-  '/js/qr/qr-generator.js',
   '/js/screens/home-screen.js',
   '/js/screens/camera-screen.js',
   '/js/screens/capture-screen.js',
-  '/js/screens/qr-screen.js',
   '/js/screens/gallery-screen.js',
   '/js/ui/components.js',
   '/js/utils/share.js',

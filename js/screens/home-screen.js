@@ -111,18 +111,10 @@ export function mountHome(container) {
     style: { width: '100%' },
   }, 'VIEW IN AR \u2192');
 
-  const secondRow = el('div', {
-    style: { display: 'flex', gap: '10px', width: '100%' }
-  });
-  const qrBtn = el('button', {
-    className: 'btn', style: { flex: '1', display: 'none' },
-    onClick: () => navigateTo(`qr/${getState().normieId}`),
-  }, 'QR CODE');
   const tweetBtn = el('button', {
-    className: 'btn', style: { flex: '1', display: 'none' },
+    className: 'btn', style: { width: '100%', display: 'none' },
     onClick: () => shareToTwitter(),
   }, 'SHARE ON X');
-  secondRow.append(qrBtn, tweetBtn);
 
   // Export row (sticker + GIF)
   const exportRow = el('div', {
@@ -138,7 +130,7 @@ export function mountHome(container) {
   }, 'GIF ANIM');
   exportRow.append(stickerBtn, gifBtn);
 
-  btnGroup.append(goBtn, secondRow, exportRow);
+  btnGroup.append(goBtn, tweetBtn, exportRow);
 
   // Gallery link
   const galleryBtn = el('button', {
@@ -312,7 +304,6 @@ export function mountHome(container) {
     infoBlock.style.display = 'flex';
 
     // Buttons
-    qrBtn.style.display = 'block';
     tweetBtn.style.display = 'block';
     stickerBtn.style.display = 'block';
     gifBtn.style.display = 'block';
@@ -344,7 +335,6 @@ export function mountHome(container) {
       errorLabel.style.display = 'block';
       preview.style.display = 'none';
       infoBlock.style.display = 'none';
-      qrBtn.style.display = 'none';
       tweetBtn.style.display = 'none';
       stickerBtn.style.display = 'none';
       gifBtn.style.display = 'none';
