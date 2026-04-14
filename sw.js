@@ -1,6 +1,6 @@
 // Normie Mirror — Service Worker
 
-const CACHE_SHELL = 'normie-mirror-shell-v2';
+const CACHE_SHELL = 'normie-mirror-shell-v3';
 const CACHE_API = 'normie-mirror-api-v1';
 const API_HOST = 'api.normies.art';
 

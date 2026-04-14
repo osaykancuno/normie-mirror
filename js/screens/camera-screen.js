@@ -9,7 +9,6 @@ import { TouchControls } from '../camera/touch-controls.js';
 import { createAnimationFn } from '../render/animation-engine.js';
 import { capturePhoto } from '../capture/photo-capture.js';
 import { VideoCapture } from '../capture/video-capture.js';
-import { getFilterNames } from '../capture/filters.js';
 import { el, icon, showToast, createShutterButton } from '../ui/components.js';
 import { navigateTo } from '../app.js';
 
@@ -81,21 +80,6 @@ export function mountCamera(container) {
     modeBar.appendChild(chip);
   });
 
-  // Filter bar
-  const filterBar = el('div', { className: 'filter-bar' });
-  const filters = getFilterNames();
-  filters.forEach(name => {
-    const chip = el('button', {
-      className: `filter-chip${name === state.activeFilter ? ' filter-chip--active' : ''}`,
-      onClick: () => {
-        setState({ activeFilter: name });
-        filterBar.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('filter-chip--active'));
-        chip.classList.add('filter-chip--active');
-      }
-    }, name === 'none' ? 'NONE' : name.toUpperCase());
-    filterBar.appendChild(chip);
-  });
-
   // Bottom toolbar
   const bottomBar = el('div', { className: 'toolbar' });
 
@@ -112,7 +96,7 @@ export function mountCamera(container) {
       if (getState().isRecording) return;
       showToast('Capturing...');
       try {
-        const blob = await capturePhoto(video, overlayCanvas, getState().activeFilter);
+        const blob = await capturePhoto(video, overlayCanvas, 'none');
         setState({ capturedMedia: blob, capturedType: 'photo' });
         navigateTo('capture');
       } catch (err) {
@@ -124,7 +108,7 @@ export function mountCamera(container) {
         showToast('Video not supported on this device');
         return;
       }
-      videoCapture = new VideoCapture(video, overlayCanvas, getState().activeFilter);
+      videoCapture = new VideoCapture(video, overlayCanvas, 'none');
       if (videoCapture.start()) {
         setState({ isRecording: true });
         shutterBtn.classList.add('shutter-btn--recording');
@@ -148,7 +132,7 @@ export function mountCamera(container) {
     onClick: async () => {
       showToast('Capturing...');
       try {
-        const blob = await capturePhoto(video, overlayCanvas, getState().activeFilter);
+        const blob = await capturePhoto(video, overlayCanvas, 'none');
         setState({ capturedMedia: blob, capturedType: 'photo' });
         navigateTo('capture');
       } catch (err) {
@@ -161,7 +145,7 @@ export function mountCamera(container) {
   bottomBar.append(qrBtn, shutterBtn, shareBtn);
 
   // Assemble
-  screen.append(cameraContainer, topBar, modeBar, filterBar, bottomBar);
+  screen.append(cameraContainer, topBar, modeBar, bottomBar);
   container.appendChild(screen);
 
   // Auto-hide controls
@@ -170,7 +154,6 @@ export function mountCamera(container) {
     const opacity = show ? '1' : '0';
     topBar.style.opacity = opacity;
     bottomBar.style.opacity = opacity;
-    filterBar.style.opacity = opacity;
     modeBar.style.opacity = opacity;
   }
 
@@ -182,7 +165,7 @@ export function mountCamera(container) {
     }, 4000);
   }
 
-  [topBar, bottomBar, filterBar, modeBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
+  [topBar, bottomBar, modeBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
   screen.addEventListener('pointerdown', resetControlsTimer);
   resetControlsTimer();
 
