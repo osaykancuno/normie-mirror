@@ -2,7 +2,7 @@
 
 import { getState, setState } from '../state.js';
 import { el, showToast } from '../ui/components.js';
-import { shareImage, shareVideo, downloadBlob, canShare } from '../utils/share.js';
+import { shareImage, shareVideo, downloadBlob, canShare, shareToX } from '../utils/share.js';
 import { navigateTo } from '../app.js';
 
 export function mountCapture(container) {
@@ -82,9 +82,7 @@ export function mountCapture(container) {
   const tweetBtn = el('button', {
     className: 'btn',
     onClick: () => {
-      const appUrl = `${window.location.origin}${window.location.pathname}?id=${normieId}`;
-      const text = `Just a Normie IRL \u{1F4F7}\n\nSee Normie #${normieId} in AR:\n${appUrl}\n\n#NormieMirror #Normies #CC0`;
-      window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank', 'noopener,width=550,height=420');
+      if (!shareToX(normieId)) showToast('Normie ID missing');
     }
   }, 'POST ON X');
 

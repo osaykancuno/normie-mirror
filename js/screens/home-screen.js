@@ -7,7 +7,7 @@ import { createNormieSprite, renderNormieToCanvas } from '../render/pixel-render
 import { createAnimationFn } from '../render/animation-engine.js';
 import { GIFEncoder } from '../capture/gif-encoder.js';
 import { saveRecentNormie } from '../utils/storage.js';
-import { downloadBlob } from '../utils/share.js';
+import { downloadBlob, shareToX } from '../utils/share.js';
 import { el, showToast } from '../ui/components.js';
 import { navigateTo } from '../app.js';
 
@@ -113,7 +113,10 @@ export function mountHome(container) {
 
   const tweetBtn = el('button', {
     className: 'btn', style: { width: '100%', display: 'none' },
-    onClick: () => shareToTwitter(),
+    onClick: () => {
+      const { normieId } = getState();
+      if (!shareToX(normieId)) showToast('Load a Normie first');
+    },
   }, 'SHARE ON X');
 
   // Export row (sticker + GIF)
@@ -171,14 +174,6 @@ export function mountHome(container) {
   let currentPixels = null;
   let currentTraits = null;
   let gifBusy = false;
-
-  function shareToTwitter() {
-    const { normieId } = getState();
-    const appUrl = `${window.location.origin}${window.location.pathname}?id=${normieId}`;
-    const text = `Just a Normie IRL \u{1F4F7}\n\nCheck out Normie #${normieId} in AR:\n${appUrl}\n\n#NormieMirror #Normies #CC0`;
-    const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    window.open(twitterUrl, '_blank', 'noopener,width=550,height=420');
-  }
 
   function handleStickerExport() {
     if (!currentPixels) return;
