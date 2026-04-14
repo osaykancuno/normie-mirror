@@ -6,6 +6,7 @@ import { mountHome } from './screens/home-screen.js';
 import { mountCamera } from './screens/camera-screen.js';
 import { mountCapture } from './screens/capture-screen.js';
 import { mountQR } from './screens/qr-screen.js';
+import { mountGallery } from './screens/gallery-screen.js';
 
 const app = document.getElementById('app');
 let currentUnmount = null;
@@ -15,6 +16,7 @@ const routes = {
   'camera':  mountCamera,
   'capture': mountCapture,
   'qr':      mountQR,
+  'gallery': mountGallery,
 };
 
 function parseHash() {

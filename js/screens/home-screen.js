@@ -3,12 +3,18 @@
 import { getState, setState } from '../state.js';
 import { loadNormie } from '../api/normies.js';
 import { cachedFetch } from '../api/cache.js';
-import { renderNormieToCanvas } from '../render/pixel-renderer.js';
+import { createNormieSprite, renderNormieToCanvas } from '../render/pixel-renderer.js';
+import { createAnimationFn } from '../render/animation-engine.js';
+import { GIFEncoder } from '../capture/gif-encoder.js';
 import { saveRecentNormie } from '../utils/storage.js';
+import { downloadBlob } from '../utils/share.js';
 import { el, showToast } from '../ui/components.js';
 import { navigateTo } from '../app.js';
 
-const MAX_NORMIE_ID = 6969; // Total supply
+const MAX_NORMIE_ID = 6969;
+const GIF_SIZE = 160;
+const GIF_FRAMES = 20;
+const GIF_DELAY = 80; // ms per frame
 
 export function mountHome(container) {
   const screen = el('div', { className: 'screen' });
@@ -118,7 +124,28 @@ export function mountHome(container) {
   }, 'SHARE ON X');
   secondRow.append(qrBtn, tweetBtn);
 
-  btnGroup.append(goBtn, secondRow);
+  // Export row (sticker + GIF)
+  const exportRow = el('div', {
+    style: { display: 'flex', gap: '10px', width: '100%' }
+  });
+  const stickerBtn = el('button', {
+    className: 'btn', style: { flex: '1', display: 'none', fontSize: '12px' },
+    onClick: () => handleStickerExport(),
+  }, 'STICKER PNG');
+  const gifBtn = el('button', {
+    className: 'btn', style: { flex: '1', display: 'none', fontSize: '12px' },
+    onClick: () => handleGifExport(),
+  }, 'GIF ANIM');
+  exportRow.append(stickerBtn, gifBtn);
+
+  btnGroup.append(goBtn, secondRow, exportRow);
+
+  // Gallery link
+  const galleryBtn = el('button', {
+    className: 'btn btn--ghost',
+    onClick: () => navigateTo('gallery'),
+    style: { width: '100%', fontSize: '12px' },
+  }, 'WALLET GALLERY');
 
   // Recent normies
   const recentSection = el('div', {
@@ -138,7 +165,7 @@ export function mountHome(container) {
   });
   recentSection.append(recentLabel, recentList);
 
-  main.append(titleBlock, preview, infoBlock, errorLabel, inputRow, btnGroup, recentSection);
+  main.append(titleBlock, preview, infoBlock, errorLabel, inputRow, btnGroup, galleryBtn, recentSection);
 
   // === Footer ===
   const footer = el('div', { className: 'footer' });
@@ -149,6 +176,8 @@ export function mountHome(container) {
 
   // === Logic ===
   let loading = false;
+  let currentPixels = null;
+  let currentTraits = null;
 
   function shareToTwitter() {
     const { normieId } = getState();
@@ -156,6 +185,90 @@ export function mountHome(container) {
     const text = `Just a Normie IRL \u{1F4F7}\n\nCheck out Normie #${normieId} in AR:\n${appUrl}\n\n#NormieMirror #Normies #CC0`;
     const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(twitterUrl, '_blank', 'noopener,width=550,height=420');
+  }
+
+  function handleStickerExport() {
+    if (!currentPixels) return;
+    const { normieId } = getState();
+
+    // Render transparent PNG at high res (40x10 = 400px)
+    const scale = 10;
+    const size = 40 * scale;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    // Draw only ON pixels (transparent background)
+    renderNormieToCanvas(ctx, currentPixels, 0, 0, scale, { transparent: true });
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        downloadBlob(blob, `normie-${normieId}-sticker.png`);
+        showToast('Sticker saved!');
+      }
+    }, 'image/png');
+  }
+
+  async function handleGifExport() {
+    if (!currentPixels || !currentTraits) return;
+    const { normieId } = getState();
+
+    gifBtn.textContent = 'GENERATING...';
+    gifBtn.disabled = true;
+
+    // Use setTimeout to let UI update before heavy work
+    await new Promise(r => setTimeout(r, 50));
+
+    try {
+      const encoder = new GIFEncoder(GIF_SIZE, GIF_SIZE);
+      const canvas = document.createElement('canvas');
+      canvas.width = GIF_SIZE;
+      canvas.height = GIF_SIZE;
+      const ctx = canvas.getContext('2d');
+
+      const sprite = createNormieSprite(currentPixels, { transparent: false });
+      const animFn = createAnimationFn(currentTraits);
+
+      for (let i = 0; i < GIF_FRAMES; i++) {
+        const t = (i / GIF_FRAMES) * 2; // 2 seconds of animation
+
+        ctx.clearRect(0, 0, GIF_SIZE, GIF_SIZE);
+
+        // Background
+        ctx.fillStyle = '#e3e5e4';
+        ctx.fillRect(0, 0, GIF_SIZE, GIF_SIZE);
+
+        // Get animation mods
+        const mods = animFn(t);
+
+        // Draw sprite centered with animation
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        const drawSize = GIF_SIZE * 0.85;
+        const cx = GIF_SIZE / 2 + mods.x;
+        const cy = GIF_SIZE / 2 + mods.y;
+        ctx.translate(cx, cy);
+        ctx.rotate((mods.rotation || 0) * Math.PI / 180);
+        ctx.scale(mods.scaleX || 1, mods.scaleY || 1);
+        ctx.drawImage(sprite, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        ctx.restore();
+
+        const imageData = ctx.getImageData(0, 0, GIF_SIZE, GIF_SIZE);
+        encoder.addFrame(imageData, GIF_DELAY);
+      }
+
+      const data = encoder.encode();
+      const blob = new Blob([data], { type: 'image/gif' });
+      downloadBlob(blob, `normie-${normieId}-animated.gif`);
+      showToast('GIF saved!');
+    } catch (err) {
+      showToast('GIF generation failed');
+    } finally {
+      gifBtn.textContent = 'GIF ANIM';
+      gifBtn.disabled = false;
+    }
   }
 
   function buildRecent() {
@@ -174,6 +287,8 @@ export function mountHome(container) {
 
   function showNormie(id, data) {
     setState({ normieId: id, pixelData: data.pixels, traits: data.traits, metadata: data.metadata });
+    currentPixels = data.pixels;
+    currentTraits = data.traits;
 
     // Preview
     const ctx = preview.getContext('2d');
@@ -196,6 +311,8 @@ export function mountHome(container) {
     // Buttons
     qrBtn.style.display = 'block';
     tweetBtn.style.display = 'block';
+    stickerBtn.style.display = 'block';
+    gifBtn.style.display = 'block';
 
     // Save recent
     const recent = saveRecentNormie(id);
@@ -226,6 +343,8 @@ export function mountHome(container) {
       infoBlock.style.display = 'none';
       qrBtn.style.display = 'none';
       tweetBtn.style.display = 'none';
+      stickerBtn.style.display = 'none';
+      gifBtn.style.display = 'none';
     } finally {
       loading = false;
       if (goBtn.textContent === 'LOADING...') {

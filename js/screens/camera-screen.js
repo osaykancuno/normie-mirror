@@ -1,4 +1,4 @@
-// Normie Mirror — Camera AR Screen
+// Normie Mirror — Camera AR Screen (multi-normie support)
 
 import { getState, setState } from '../state.js';
 import { loadNormie } from '../api/normies.js';
@@ -12,6 +12,9 @@ import { VideoCapture } from '../capture/video-capture.js';
 import { el, icon, showToast, createShutterButton } from '../ui/components.js';
 import { navigateTo } from '../app.js';
 
+const MAX_NORMIES = 3;
+const MAX_NORMIE_ID = 6969;
+
 export function mountCamera(container) {
   const state = getState();
   const normieId = state.normieId;
@@ -23,6 +26,7 @@ export function mountCamera(container) {
   let videoCapture = null;
   let controlsVisible = true;
   let controlsTimer = null;
+  const extraNormieIds = []; // track added IDs
 
   // DOM
   const screen = el('div', { className: 'screen' });
@@ -80,6 +84,54 @@ export function mountCamera(container) {
     modeBar.appendChild(chip);
   });
 
+  // Add Normie bar (multi-normie controls)
+  const addBar = el('div', {
+    className: 'filter-bar',
+    style: { bottom: '190px' },
+  });
+  const addBtn = el('button', {
+    className: 'filter-chip',
+    onClick: () => handleAddNormie(),
+  }, '+ ADD NORMIE');
+  const countChip = el('span', {
+    className: 'filter-chip',
+    style: { pointerEvents: 'none' },
+  }, '1/' + MAX_NORMIES);
+  addBar.append(addBtn, countChip);
+
+  function updateCountChip() {
+    if (!overlay) return;
+    const n = overlay.getSpriteCount();
+    countChip.textContent = `${n}/${MAX_NORMIES}`;
+    addBtn.style.display = n >= MAX_NORMIES ? 'none' : '';
+  }
+
+  async function handleAddNormie() {
+    if (!overlay || overlay.getSpriteCount() >= MAX_NORMIES) return;
+
+    // Pick a random ID different from current ones
+    let newId;
+    const usedIds = [normieId, ...extraNormieIds];
+    do {
+      newId = Math.floor(Math.random() * MAX_NORMIE_ID) + 1;
+    } while (usedIds.includes(newId));
+
+    showToast(`Adding #${newId}...`);
+    try {
+      const data = await cachedFetch(`normie_${newId}`, () => loadNormie(newId));
+      const idx = overlay.loadSprite(data.pixels, newId);
+      overlay.setAnimationFn(createAnimationFn(data.traits), idx);
+      extraNormieIds.push(newId);
+      updateCountChip();
+
+      // Update label
+      const ids = [normieId, ...extraNormieIds];
+      normieLabel.textContent = ids.map(id => `#${id}`).join(' ');
+    } catch {
+      showToast('Failed to add Normie');
+    }
+  }
+
   // Bottom toolbar
   const bottomBar = el('div', { className: 'toolbar' });
 
@@ -126,7 +178,7 @@ export function mountCamera(container) {
     }
   });
 
-  // Share/download button
+  // Share button
   const shareBtn = el('button', {
     className: 'btn btn--icon',
     onClick: async () => {
@@ -145,7 +197,7 @@ export function mountCamera(container) {
   bottomBar.append(qrBtn, shutterBtn, shareBtn);
 
   // Assemble
-  screen.append(cameraContainer, topBar, modeBar, bottomBar);
+  screen.append(cameraContainer, topBar, addBar, modeBar, bottomBar);
   container.appendChild(screen);
 
   // Auto-hide controls
@@ -155,6 +207,7 @@ export function mountCamera(container) {
     topBar.style.opacity = opacity;
     bottomBar.style.opacity = opacity;
     modeBar.style.opacity = opacity;
+    addBar.style.opacity = opacity;
   }
 
   function resetControlsTimer() {
@@ -165,7 +218,7 @@ export function mountCamera(container) {
     }, 4000);
   }
 
-  [topBar, bottomBar, modeBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
+  [topBar, bottomBar, modeBar, addBar].forEach(e => { e.style.transition = 'opacity 0.3s'; });
   screen.addEventListener('pointerdown', resetControlsTimer);
   resetControlsTimer();
 
@@ -208,9 +261,10 @@ export function mountCamera(container) {
     window.addEventListener('resize', resizeOverlay);
 
     overlay = new AROverlay(overlayCanvas);
-    overlay.loadSprite(pixelData);
-    overlay.setAnimationFn(createAnimationFn(traits));
+    overlay.loadSprite(pixelData, normieId);
+    overlay.setAnimationFn(createAnimationFn(traits), 0);
     overlay.start();
+    updateCountChip();
 
     touch = new TouchControls(overlayCanvas, {
       onMove: (dx, dy) => {
