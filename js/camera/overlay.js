@@ -1,4 +1,4 @@
-// Normie Mirror — AR overlay compositor
+// NormieSticker — AR overlay compositor
 
 import { createNormieSprite } from '../render/pixel-renderer.js';
 import { getState } from '../state.js';

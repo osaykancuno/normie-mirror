@@ -1,7 +1,7 @@
-// Normie Mirror — Service Worker
+// NormieSticker — Service Worker
 
-const CACHE_SHELL = 'normie-mirror-shell-v7';
-const CACHE_API = 'normie-mirror-api-v1';
+const CACHE_SHELL = 'normiesticker-shell-v8';
+const CACHE_API = 'normiesticker-api-v1';
 const API_HOST = 'api.normies.art';
 
 const SHELL_FILES = [

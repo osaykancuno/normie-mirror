@@ -1,4 +1,4 @@
-// Normie Mirror — Reusable UI components
+// NormieSticker — Reusable UI components
 
 /**
  * Create an element with attributes and children.

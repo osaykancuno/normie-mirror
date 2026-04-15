@@ -1,4 +1,4 @@
-// Normie Mirror — Entry point + hash router
+// NormieSticker — Entry point + hash router
 
 import { getState, setState } from './state.js';
 import { loadRecentNormies } from './utils/storage.js';

@@ -1,4 +1,4 @@
-// Normie Mirror — Touch gesture controls (drag, pinch, rotate)
+// NormieSticker — Touch gesture controls (drag, pinch, rotate)
 
 export class TouchControls {
   constructor(element, callbacks = {}) {

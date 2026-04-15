@@ -1,6 +1,6 @@
 {
-  "name": "Normies AR Mirror",
-  "short_name": "Normie Mirror",
+  "name": "NormieSticker",
+  "short_name": "NormieSticker",
   "description": "See your Normie NFT in augmented reality. Just a Normie IRL.",
   "start_url": "/?source=pwa",
   "display": "standalone",

@@ -1,4 +1,4 @@
-// Normie Mirror — Minimal GIF89a encoder
+// NormieSticker — Minimal GIF89a encoder
 // Encodes frames into an animated GIF binary
 
 export class GIFEncoder {

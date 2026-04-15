@@ -1,4 +1,4 @@
-// Normie Mirror — localStorage helpers
+// NormieSticker — localStorage helpers
 
 const RECENT_KEY = 'normie_mirror_recent';
 const MAX_RECENT = 10;

@@ -1,4 +1,4 @@
-// Normie Mirror — Camera stream manager
+// NormieSticker — Camera stream manager
 
 export class CameraManager {
   constructor() {

@@ -1,4 +1,4 @@
-// Normie Mirror — Capture review screen
+// NormieSticker — Capture review screen
 
 import { getState, setState } from '../state.js';
 import { el, showToast } from '../ui/components.js';
@@ -65,7 +65,7 @@ export function mountCapture(container) {
     className: 'btn',
     onClick: () => {
       const ext = capturedType === 'video' ? 'webm' : 'png';
-      downloadBlob(capturedMedia, `normie-mirror.${ext}`);
+      downloadBlob(capturedMedia, `normiesticker.${ext}`);
       showToast('Downloaded!');
     }
   }, 'DOWNLOAD');

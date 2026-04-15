@@ -1,4 +1,4 @@
-// Normie Mirror — Home Screen
+// NormieSticker — Home Screen
 
 import { getState, setState } from '../state.js';
 import { loadNormie } from '../api/normies.js';
@@ -34,7 +34,7 @@ export function mountHome(container) {
   // Title block
   const titleBlock = el('div', { style: { textAlign: 'center', lineHeight: '1.6' } });
   const title = el('h1', {}, 'NORMIE');
-  const subtitle = el('h1', { style: { fontSize: '14px', marginTop: '4px' } }, 'MIRROR');
+  const subtitle = el('h1', { style: { fontSize: '14px', marginTop: '4px' } }, 'STICKER');
   const tagline = el('p', {
     style: {
       fontFamily: 'var(--font-body)', fontSize: '13px',

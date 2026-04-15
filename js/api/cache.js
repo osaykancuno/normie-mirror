@@ -1,4 +1,4 @@
-// Normie Mirror — Simple cache (memory + localStorage)
+// NormieSticker — Simple cache (memory + localStorage)
 
 const memCache = new Map();
 const STORAGE_PREFIX = 'normie_cache_';

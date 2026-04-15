@@ -1,4 +1,4 @@
-// Normie Mirror — Trait-based animation engine
+// NormieSticker — Trait-based animation engine
 
 const EXPRESSION_ANIMS = {
   'Peaceful':  { type: 'breathe',  speed: 0.5, amplitude: 5 },

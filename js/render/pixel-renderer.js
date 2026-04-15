@@ -1,4 +1,4 @@
-// Normie Mirror — 40×40 pixel grid renderer
+// NormieSticker — 40×40 pixel grid renderer
 
 const GRID_SIZE = 40;
 const COLOR_ON = '#48494b';

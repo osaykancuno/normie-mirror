@@ -1,4 +1,4 @@
-// Normie Mirror — Camera AR Screen
+// NormieSticker — Camera AR Screen
 
 import { getState, setState } from '../state.js';
 import { loadNormie } from '../api/normies.js';

@@ -1,4 +1,4 @@
-// Normie Mirror — API client for api.normies.art
+// NormieSticker — API client for api.normies.art
 
 const BASE = 'https://api.normies.art';
 const MAX_ID = 99999;

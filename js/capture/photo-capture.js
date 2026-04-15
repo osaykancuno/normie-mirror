@@ -1,4 +1,4 @@
-// Normie Mirror — Photo capture (composite camera + overlay)
+// NormieSticker — Photo capture (composite camera + overlay)
 
 /**
  * Capture a photo compositing the video frame with the Normie overlay.
@@ -35,7 +35,7 @@ function drawWatermark(ctx, w, h) {
   ctx.save();
 
   ctx.font = `${fontSize}px "Press Start 2P", monospace`;
-  const text = 'NORMIE MIRROR';
+  const text = 'NORMIESTICKER';
   const metrics = ctx.measureText(text);
   const px = fontSize * 0.6;
   const py = fontSize * 0.4;

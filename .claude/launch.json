@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "normie-mirror",
+      "name": "normiesticker",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-s", "."],
       "port": 3000,

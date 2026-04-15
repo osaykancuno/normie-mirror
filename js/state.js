@@ -1,4 +1,4 @@
-// Normie Mirror — Minimal pub/sub state store
+// NormieSticker — Minimal pub/sub state store
 
 const state = {
   normieId: null,

@@ -1,4 +1,4 @@
-// Normie Mirror — Gallery Screen (wallet → grid of owned Normies)
+// NormieSticker — Gallery Screen (wallet → grid of owned Normies)
 
 import { setState } from '../state.js';
 import { getHoldings, loadNormie } from '../api/normies.js';

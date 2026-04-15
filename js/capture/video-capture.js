@@ -1,4 +1,4 @@
-// Normie Mirror — Video capture (MediaRecorder + canvas composite)
+// NormieSticker — Video capture (MediaRecorder + canvas composite)
 
 export class VideoCapture {
   constructor(video, overlayCanvas) {

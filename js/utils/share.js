@@ -1,4 +1,4 @@
-// Normie Mirror — Web Share API wrapper
+// NormieSticker — Web Share API wrapper
 
 export function canShare() {
   return !!navigator.share;
@@ -9,12 +9,12 @@ export function canShareFiles() {
 }
 
 export async function shareImage(blob, title = 'My Normie') {
-  const file = new File([blob], 'normie-mirror.png', { type: 'image/png' });
+  const file = new File([blob], 'normiesticker.png', { type: 'image/png' });
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     return navigator.share({
       title,
-      text: 'Check out my Normie in AR! #NormieMirror',
+      text: 'Check out my Normie in AR! #NormieSticker',
       files: [file],
     });
   }
@@ -23,26 +23,26 @@ export async function shareImage(blob, title = 'My Normie') {
   if (navigator.share) {
     return navigator.share({
       title,
-      text: 'Check out my Normie in AR! #NormieMirror',
+      text: 'Check out my Normie in AR! #NormieSticker',
     });
   }
 
   // Last fallback: download
-  downloadBlob(blob, 'normie-mirror.png');
+  downloadBlob(blob, 'normiesticker.png');
 }
 
 export async function shareVideo(blob, title = 'My Normie') {
-  const file = new File([blob], 'normie-mirror.webm', { type: 'video/webm' });
+  const file = new File([blob], 'normiesticker.webm', { type: 'video/webm' });
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     return navigator.share({
       title,
-      text: 'Check out my Normie in AR! #NormieMirror',
+      text: 'Check out my Normie in AR! #NormieSticker',
       files: [file],
     });
   }
 
-  downloadBlob(blob, 'normie-mirror.webm');
+  downloadBlob(blob, 'normiesticker.webm');
 }
 
 export function downloadBlob(blob, filename) {
@@ -66,7 +66,7 @@ export function shareToX(normieId) {
   if (!Number.isInteger(id) || id <= 0) return false;
 
   const appUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
-  const text = `Just a Normie IRL \u{1F4F7}\n\nCheck out Normie #${id} in AR:\n${appUrl}\n\n#NormieMirror #Normies #CC0`;
+  const text = `Just a Normie IRL \u{1F4F7}\n\nCheck out Normie #${id} in AR:\n${appUrl}\n\n#NormieSticker #Normies #CC0`;
   const intentUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
 
   const win = window.open(intentUrl, '_blank', 'noopener,noreferrer');
